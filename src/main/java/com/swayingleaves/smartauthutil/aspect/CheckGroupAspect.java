@@ -2,9 +2,11 @@ package com.swayingleaves.smartauthutil.aspect;
 
 import com.swayingleaves.smartauthutil.annotation.CheckGroup;
 import com.swayingleaves.smartauthutil.code.Const;
+import com.swayingleaves.smartauthutil.code.LoginUserHolder;
 import com.swayingleaves.smartauthutil.exception.NoAuthorityException;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -20,12 +22,13 @@ import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
  * @author zhenglin
- * @since 2020/2/21 5:05 下午
  * @apiNote 检查组注解实现类
+ * @since 2020/2/21 5:05 下午
  */
 @Aspect
 @Component
@@ -37,29 +40,27 @@ public class CheckGroupAspect {
     RedisTemplate redisTemplate;
 
     @Before("execution(* *..controller..*(..))")
-    public void before(JoinPoint joinPoint){
+    public void before(JoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
         CheckGroup annotation = method.getAnnotation(CheckGroup.class);
 
-        if (annotation == null){
+        if (annotation == null) {
             //获取类上注解
             annotation = joinPoint.getTarget().getClass().getAnnotation(CheckGroup.class);
         }
         if (annotation != null) {
-            //获取到请求的属性
-            ServletRequestAttributes attributes =
-                    (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             //获取到请求对象
-            HttpServletRequest request = attributes.getRequest();
             final String[] group = annotation.group();
-            if (group.length != 0){
-
+            if (group.length != 0) {
                 final String optName = annotation.opt().name();
-                Object loginUserId = request.getAttribute(Const.LOGIN_USER_ID);
-                final List<String> groups = (List<String>)request.getAttribute(Const.LOGIN_USER_GROUP);
-                if (CollectionUtils.isEmpty(groups)){
-                    throw new NoAuthorityException(loginUserId,"未授权该组");
+                final LoginUser loginUser = LoginUserHolder.get();
+                final String loginUserId = loginUser.getUser().getId();
+
+                final List<LoginUser.Group> groups1 = loginUser.getGroups();
+                final List<String> groups = groups1.stream().map(LoginUser.Group::getGroupName).collect(Collectors.toList());
+                if (CollectionUtils.isEmpty(groups)) {
+                    throw new NoAuthorityException(loginUserId, "未授权该组");
                 }
                 boolean result = false;
                 switch (optName) {
@@ -76,10 +77,15 @@ public class CheckGroupAspect {
                     default:
                         break;
                 }
-                if (!result){
-                    throw new NoAuthorityException(loginUserId,"未授权该组");
+                if (!result) {
+                    throw new NoAuthorityException(loginUserId, "未授权该组");
                 }
             }
         }
+    }
+
+    @After("execution(* *..controller..*(..))")
+    public void after(){
+        LoginUserHolder.remove();
     }
 }

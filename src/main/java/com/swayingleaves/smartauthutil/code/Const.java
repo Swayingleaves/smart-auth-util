@@ -27,14 +27,6 @@ public class Const {
      */
     public static final int LOGIN_TIME_OFF = 40;
 
-    /**
-     * 登录用户id 保存在request中的key名
-     */
-    public static final String LOGIN_USER_ID = "loginUserId";
-    public static final String LOGIN_USER_NAME = "loginUserName";
-    public static final String LOGIN_USER_POWER = "LOGIN_USER_POWER";
-    public static final String LOGIN_USER_GROUP = "LOGIN_USER_GROUP";
-
     public static final String SMART_AUTH = "SMART_AUTH:";
     public static final String LOGIN_USER = SMART_AUTH+"LOGIN_USER:";
     public static final String SU_LOGIN_USER_ID = LOGIN_USER+"ID:";

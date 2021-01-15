@@ -2,24 +2,22 @@ package com.swayingleaves.smartauthutil.aspect;
 
 import com.swayingleaves.smartauthutil.annotation.CheckRole;
 import com.swayingleaves.smartauthutil.code.Const;
+import com.swayingleaves.smartauthutil.code.LoginUserHolder;
 import com.swayingleaves.smartauthutil.exception.NoAuthorityException;
-import com.swayingleaves.smartauthutil.util.UserInfoUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author zhenglin
@@ -42,15 +40,11 @@ public class CheckRoleAspect {
             String[] checkRoles = annotation.roles();
             if (checkRoles.length != 0){
                 String op = annotation.opt().name();
-                //获取到请求的属性
-                ServletRequestAttributes attributes =
-                        (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-                //获取到请求对象
-                HttpServletRequest request = attributes.getRequest();
-                Object loginUserId = request.getAttribute(Const.LOGIN_USER_ID);
-                Map<String,List<String>> power = UserInfoUtil.getPower(request,loginUserId);
-                final Set<String> hasRoles = power.keySet();
-                boolean flag = false;
+                final LoginUser loginUser = LoginUserHolder.get();
+                final String loginUserId = loginUser.getUser().getId();
+                final List<LoginUser.Power> powers = loginUser.getPowers();
+                final Set<String> hasRoles = powers.stream().map(LoginUser.Power::getRoleName).collect(Collectors.toSet());
+                boolean flag;
                 switch (op){
                     case Const.AND: flag = check(checkRoles,hasRoles,true) ;break;
                     case Const.OR:
@@ -77,4 +71,8 @@ public class CheckRoleAspect {
         }
     }
 
+    @After("execution(* *..controller..*(..))")
+    public void after(){
+        LoginUserHolder.remove();
+    }
 }
