@@ -143,23 +143,17 @@ public class TestController {
 @CheckLogin
 @RestController
 public class TestController {
-
-    @RequestMapping("/test")
-    @CheckLogin
-    @RestController
-    public class TestController {
-    
-        @GetMapping("/queryMsg")
-        @CheckPermission(permissions = {"admin:query","master:add"},opt=AuthOpt.OR)
-        public String queryMsg(){
-            return "msg";
-        }
-    
-        @GetMapping("/delMsg")
-        @CheckPermission(permissions = {"admin:del","master:del"},opt = AuthOpt.AND)
-        public String delMsg(){
-            return "del";
-        }
+ 
+    @GetMapping("/queryMsg")
+    @CheckPermission(permissions = {"admin:query","master:add"},opt=AuthOpt.OR)
+    public String queryMsg(){
+        return "msg";
+    }
+ 
+    @GetMapping("/delMsg")
+    @CheckPermission(permissions = {"admin:del","master:del"},opt = AuthOpt.AND)
+    public String delMsg(){
+        return "del";
     }
 }
 ```
